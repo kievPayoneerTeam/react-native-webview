@@ -53,8 +53,7 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     saveFormDataDisabled: false,
     cacheEnabled: true,
     androidHardwareAccelerationDisabled: false,
-    originWhitelist: defaultOriginWhitelist,
-    whitelist: []
+    originWhitelist: defaultOriginWhitelist
   };
 
   static isFileUploadSupported = async () => {
@@ -256,7 +255,6 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
       style,
       containerStyle,
       nativeConfig = {},
-      whitelist,
       ...otherProps
     } = this.props;
 
@@ -322,7 +320,7 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
         // TODO: find a better way to type this.
         source={resolveAssetSource(source as ImageSourcePropType)}
         style={webViewStyles}
-        whitelist={whitelist}
+        originWhitelist={originWhitelist}
         {...nativeConfig.props}
       />
     );

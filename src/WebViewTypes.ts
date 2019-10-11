@@ -205,7 +205,7 @@ export type OnShouldStartLoadWithRequest = (
 
 export type OnCanceledRequest = (
     event: WebViewNavigation,
-) => boolean;
+) => void;
 
 export interface CommonNativeWebViewProps extends ViewProps {
   cacheEnabled?: boolean;
@@ -250,7 +250,7 @@ export interface AndroidNativeWebViewProps extends CommonNativeWebViewProps {
   textZoom?: number;
   thirdPartyCookiesEnabled?: boolean;
   urlPrefixesForDefaultIntent?: readonly string[];
-  whitelist?: string[];
+  originWhitelist?: readonly string[];
   onCanceledRequest: (event: WebViewNavigationEvent) => void;
 }
 
@@ -535,13 +535,6 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
    * @platform android
    */
   urlPrefixesForDefaultIntent?: readonly string[];
-
-  /**
-   * Used on Android only, controls whether we need to send whitelist
-   * to native part to handle canceling requests
-   * @platform android
-   */
-  whitelist?: string[];
 
   /**
    * Function that allows custom handling for canceled request

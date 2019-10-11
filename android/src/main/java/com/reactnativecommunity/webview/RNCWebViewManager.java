@@ -15,6 +15,8 @@ import android.os.Build;
 import android.os.Environment;
 import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
+
+import android.os.PatternMatcher;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
@@ -37,6 +39,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 
+import com.facebook.common.util.UriUtil;
 import com.facebook.react.views.scroll.ScrollEvent;
 import com.facebook.react.views.scroll.ScrollEventType;
 import com.facebook.react.views.scroll.OnScrollDispatchHelper;
@@ -77,6 +80,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
@@ -492,7 +497,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     }
   }
 
-  @ReactProp(name = "whitelist")
+  @ReactProp(name = "originWhitelist")
   public void setWhitelist(
     WebView view,
     @Nullable ReadableArray whitelist) {
@@ -552,6 +557,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       export = MapBuilder.newHashMap();
     }
     export.put(TopLoadingProgressEvent.EVENT_NAME, MapBuilder.of("registrationName", "onLoadingProgress"));
+    export.put(TopCanceledRequestEvent.EVENT_NAME, MapBuilder.of("registrationName", "onCanceledRequest"));
     export.put(TopShouldStartLoadWithRequestEvent.EVENT_NAME, MapBuilder.of("registrationName", "onShouldStartLoadWithRequest"));
     export.put(ScrollEventType.getJSEventName(ScrollEventType.SCROLL), MapBuilder.of("registrationName", "onScroll"));
     export.put(TopHttpErrorEvent.EVENT_NAME, MapBuilder.of("registrationName", "onHttpError"));
@@ -732,11 +738,12 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     @Override
     public boolean shouldOverrideUrlLoading(WebView view, String url) {
       activeUrl = url;
-      if (whitelist != null && whitelist.toArrayList().contains(url)) {
-        return false;
-      } if (whitelist == null || whitelist.toArrayList().isEmpty()) {
-        return false;
-      }
+      Boolean isContained = (whitelist != null && !whitelist.toArrayList().isEmpty()) ? false : true;
+      whitelist.toArrayList().forEach((k, v)-> {
+        PatternMatcher pm = new PatternMatcher(v);
+        if (pm.match(url) == true) { isContained = true; return; }
+      });
+      if (isContained == true) return false;
       dispatchEvent(
         view,
         new TopCanceledRequestEvent(

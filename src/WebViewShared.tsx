@@ -3,7 +3,7 @@ import React from 'react';
 import { Linking, View, ActivityIndicator, Text } from 'react-native';
 import {
   WebViewNavigationEvent,
-  OnShouldStartLoadWithRequest,
+  OnShouldStartLoadWithRequest, OnCanceledRequest,
 } from './WebViewTypes';
 import styles from './WebView.styles';
 
@@ -56,6 +56,16 @@ const createOnShouldStartLoadWithRequest = (
   };
 };
 
+const createOnCanceledRequest = (
+    onCanceledRequest?: OnCanceledRequest,
+) => {
+  return ({ nativeEvent }: WebViewNavigationEvent) => {
+    if (onCanceledRequest) {
+      onCanceledRequest(nativeEvent);
+    }
+  };
+};
+
 const defaultRenderLoading = () => (
   <View style={styles.loadingOrErrorView}>
     <ActivityIndicator />
@@ -79,4 +89,5 @@ export {
   createOnShouldStartLoadWithRequest,
   defaultRenderLoading,
   defaultRenderError,
+  createOnCanceledRequest,
 };

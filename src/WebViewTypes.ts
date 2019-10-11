@@ -203,6 +203,10 @@ export type OnShouldStartLoadWithRequest = (
   event: WebViewNavigation,
 ) => boolean;
 
+export type OnCanceledRequest = (
+    event: WebViewNavigation,
+) => boolean;
+
 export interface CommonNativeWebViewProps extends ViewProps {
   cacheEnabled?: boolean;
   incognito?: boolean;
@@ -246,6 +250,8 @@ export interface AndroidNativeWebViewProps extends CommonNativeWebViewProps {
   textZoom?: number;
   thirdPartyCookiesEnabled?: boolean;
   urlPrefixesForDefaultIntent?: readonly string[];
+  whitelist?: string[];
+  onCanceledRequest: (event: WebViewNavigationEvent) => void;
 }
 
 export interface IOSNativeWebViewProps extends CommonNativeWebViewProps {
@@ -529,6 +535,18 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
    * @platform android
    */
   urlPrefixesForDefaultIntent?: readonly string[];
+
+  /**
+   * Used on Android only, controls whether we need to send whitelist
+   * to native part to handle canceling requests
+   * @platform android
+   */
+  whitelist?: string[];
+
+  /**
+   * Function that allows custom handling for canceled request
+   */
+  onCanceledRequest?: OnCanceledRequest;
 
   /**
    * Boolean value to disable Hardware Acceleration in the `WebView`. Used on Android only

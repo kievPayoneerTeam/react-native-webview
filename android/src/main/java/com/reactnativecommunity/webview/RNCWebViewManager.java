@@ -57,6 +57,7 @@ import com.facebook.react.uimanager.annotations.ReactProp;
 import com.facebook.react.uimanager.events.ContentSizeChangeEvent;
 import com.facebook.react.uimanager.events.Event;
 import com.facebook.react.uimanager.events.EventDispatcher;
+import com.reactnativecommunity.webview.events.TopCanceledRequestEvent;
 import com.reactnativecommunity.webview.events.TopLoadingErrorEvent;
 import com.reactnativecommunity.webview.events.TopHttpErrorEvent;
 import com.reactnativecommunity.webview.events.TopLoadingFinishEvent;
@@ -491,6 +492,16 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     }
   }
 
+  @ReactProp(name = "whitelist")
+  public void setWhitelist(
+    WebView view,
+    @Nullable ReadableArray whitelist) {
+    RNCWebViewClient client = ((RNCWebView) view).getRNCWebViewClient();
+    if (client != null && whitelist != null) {
+      client.setWhitelist(whitelist);
+    }
+  }
+
   @ReactProp(name = "urlPrefixesForDefaultIntent")
   public void setUrlPrefixesForDefaultIntent(
     WebView view,
@@ -691,6 +702,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     protected boolean mLastLoadFailed = false;
     protected @Nullable
     ReadableArray mUrlPrefixesForDefaultIntent;
+    ReadableArray whitelist;
 
     @Override
     public void onPageFinished(WebView webView, String url) {
@@ -720,11 +732,23 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     @Override
     public boolean shouldOverrideUrlLoading(WebView view, String url) {
       activeUrl = url;
+      if (whitelist != null && whitelist.toArrayList().contains(url)) {
+        return false;
+      } if (whitelist == null || whitelist.toArrayList().isEmpty()) {
+        return false;
+      }
+      dispatchEvent(
+        view,
+        new TopCanceledRequestEvent(
+          view.getId(),
+          createWebViewEvent(view, url)));
+      /*
       dispatchEvent(
         view,
         new TopShouldStartLoadWithRequestEvent(
           view.getId(),
           createWebViewEvent(view, url)));
+          */
       return true;
     }
 
@@ -796,6 +820,10 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       event.putBoolean("canGoBack", webView.canGoBack());
       event.putBoolean("canGoForward", webView.canGoForward());
       return event;
+    }
+
+    public void setWhitelist(ReadableArray list) {
+      whitelist = list;
     }
 
     public void setUrlPrefixesForDefaultIntent(ReadableArray specialUrls) {

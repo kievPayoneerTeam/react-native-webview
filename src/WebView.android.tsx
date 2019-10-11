@@ -16,7 +16,7 @@ import {
   defaultOriginWhitelist,
   createOnShouldStartLoadWithRequest,
   defaultRenderError,
-  defaultRenderLoading,
+  defaultRenderLoading, createOnCanceledRequest,
 } from './WebViewShared';
 import {
   WebViewErrorEvent,
@@ -54,6 +54,7 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     cacheEnabled: true,
     androidHardwareAccelerationDisabled: false,
     originWhitelist: defaultOriginWhitelist,
+    whitelist: []
   };
 
   static isFileUploadSupported = async () => {
@@ -246,6 +247,7 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
   render() {
     const {
       onMessage,
+      onCanceledRequest: onCanceledRequestProp,
       onShouldStartLoadWithRequest: onShouldStartLoadWithRequestProp,
       originWhitelist,
       renderError,
@@ -254,6 +256,7 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
       style,
       containerStyle,
       nativeConfig = {},
+      whitelist,
       ...otherProps
     } = this.props;
 
@@ -298,6 +301,10 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
       onShouldStartLoadWithRequestProp,
     );
 
+    const onCanceledRequest = createOnCanceledRequest(
+        onCanceledRequestProp,
+    );
+
     const webView = (
       <NativeWebView
         key="webViewKey"
@@ -310,10 +317,12 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
         onHttpError={this.onHttpError}
         onMessage={this.onMessage}
         onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
+        onCanceledRequest={onCanceledRequest}
         ref={this.webViewRef}
         // TODO: find a better way to type this.
         source={resolveAssetSource(source as ImageSourcePropType)}
         style={webViewStyles}
+        whitelist={whitelist}
         {...nativeConfig.props}
       />
     );

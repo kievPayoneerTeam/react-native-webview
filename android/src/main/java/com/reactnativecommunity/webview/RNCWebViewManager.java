@@ -16,7 +16,6 @@ import android.os.Environment;
 import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
 
-import android.os.PatternMatcher;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
@@ -39,7 +38,6 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 
-import com.facebook.common.util.UriUtil;
 import com.facebook.react.views.scroll.ScrollEvent;
 import com.facebook.react.views.scroll.ScrollEventType;
 import com.facebook.react.views.scroll.OnScrollDispatchHelper;
@@ -80,8 +78,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
@@ -272,7 +268,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         break;
       case "LOAD_CACHE_ELSE_NETWORK":
         cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK;
-        break;  
+        break;
       case "LOAD_NO_CACHE":
         cacheMode = WebSettings.LOAD_NO_CACHE;
         break;
@@ -401,7 +397,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   public void setMessagingEnabled(WebView view, boolean enabled) {
     ((RNCWebView) view).setMessagingEnabled(enabled);
   }
-   
+
   @ReactProp(name = "incognito")
   public void setIncognito(WebView view, boolean enabled) {
     // Remove all previous cookies
@@ -737,13 +733,10 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     @Override
     public boolean shouldOverrideUrlLoading(WebView view, String url) {
-      activeUrl = url;
-      Boolean isContained = (whitelist != null && !whitelist.toArrayList().isEmpty()) ? false : true;
-      whitelist.toArrayList().forEach((k, v)-> {
-        PatternMatcher pm = new PatternMatcher(v);
-        if (pm.match(url) == true) { isContained = true; return; }
-      });
-      if (isContained == true) return false;
+      if (whitelist == null || whitelist.size() == 0) { activeUrl = url; return false; }
+      for (Object v: whitelist.toArrayList()) {
+        if (url.matches(RNCWebViewUtils.convertGlobToRegEx(v.toString()))) { activeUrl = url; return false; }
+      }
       dispatchEvent(
         view,
         new TopCanceledRequestEvent(

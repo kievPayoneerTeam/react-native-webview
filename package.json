@@ -28,7 +28,8 @@
   },
   "dependencies": {
     "escape-string-regexp": "2.0.0",
-    "invariant": "2.2.4"
+    "invariant": "2.2.4",
+    "minimatch": "^3.0.4"
   },
   "devDependencies": {
     "@babel/core": "7.5.5",

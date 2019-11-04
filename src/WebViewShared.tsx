@@ -7,7 +7,7 @@ import {
 } from './WebViewTypes';
 import styles from './WebView.styles';
 
-const defaultOriginWhitelist = ['http://*', 'https://*'];
+const defaultOriginWhitelist = ['**'];
 
 const passesWhitelist = (
   whitelist: readonly string[],

@@ -61,7 +61,6 @@ static NSDictionary* customCertificatesForHost;
   // Workaround for StatusBar appearance bug for iOS 12
   // https://github.com/react-native-community/react-native-webview/issues/62
   BOOL _isFullScreenVideoOpen;
-  UIStatusBarStyle _savedStatusBarStyle;
   BOOL _savedStatusBarHidden;
 
 #if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 110000 /* __IPHONE_11_0 */
@@ -299,7 +298,8 @@ static NSDictionary* customCertificatesForHost;
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     _isFullScreenVideoOpen = YES;
     RCTUnsafeExecuteOnMainQueueSync(^{
-      [RCTSharedApplication() setStatusBarStyle:UIStatusBarStyleLightContent animated:YES];
+      [RCTSharedApplication() setStatusBarHidden:NO animated:YES];
+      [RCTSharedApplication() setStatusBarStyle:RCTSharedApplication().statusBarStyle animated:YES];
     });
 #pragma clang diagnostic pop
 }
@@ -309,8 +309,8 @@ static NSDictionary* customCertificatesForHost;
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     _isFullScreenVideoOpen = NO;
     RCTUnsafeExecuteOnMainQueueSync(^{
-      [RCTSharedApplication() setStatusBarHidden:self->_savedStatusBarHidden animated:YES];
-      [RCTSharedApplication() setStatusBarStyle:self->_savedStatusBarStyle animated:YES];
+      [RCTSharedApplication() setStatusBarHidden:NO animated:YES];
+      [RCTSharedApplication() setStatusBarStyle:RCTSharedApplication().statusBarStyle animated:YES];
     });
 #pragma clang diagnostic pop
 }

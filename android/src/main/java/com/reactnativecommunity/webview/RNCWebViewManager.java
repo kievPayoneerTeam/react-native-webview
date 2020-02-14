@@ -80,6 +80,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import javax.annotation.Nullable;
+import minimatch.Minimatch;
 
 /**
  * Manages instances of {@link WebView}
@@ -735,7 +736,10 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     public boolean shouldOverrideUrlLoading(WebView view, String url) {
       if (whitelist == null || whitelist.size() == 0) { activeUrl = url; return false; }
       for (Object v: whitelist.toArrayList()) {
-        if (url.matches(RNCWebViewUtils.convertGlobToRegEx(v.toString()))) { activeUrl = url; return false; }
+        if (Minimatch.minimatch(url, v.toString())) {
+          activeUrl = url;
+          return false;
+        }
       }
       dispatchEvent(
         view,

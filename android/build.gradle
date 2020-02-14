@@ -125,4 +125,5 @@ dependencies {
   //noinspection GradleDynamicVersion
   api 'com.facebook.react:react-native:+'
   implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+  implementation 'fr.opensagres.js:minimatch.java:1.1.0'
 }

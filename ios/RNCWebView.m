@@ -61,6 +61,7 @@ static NSDictionary* customCertificatesForHost;
   // Workaround for StatusBar appearance bug for iOS 12
   // https://github.com/react-native-community/react-native-webview/issues/62
   BOOL _isFullScreenVideoOpen;
+  UIStatusBarStyle _savedStatusBarStyle;
   BOOL _savedStatusBarHidden;
 
 #if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 110000 /* __IPHONE_11_0 */

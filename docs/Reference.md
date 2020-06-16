@@ -7,6 +7,9 @@ This document lays out the current public properties and methods for the React N
 - [`source`](Reference.md#source)
 - [`automaticallyAdjustContentInsets`](Reference.md#automaticallyadjustcontentinsets)
 - [`injectedJavaScript`](Reference.md#injectedjavascript)
+- [`injectedJavaScriptBeforeContentLoaded`](Reference.md#injectedjavascriptbeforecontentloaded)
+- [`injectedJavaScriptForMainFrameOnly`](Reference.md#injectedjavascriptformainframeonly)
+- [`injectedJavaScriptBeforeContentLoadedForMainFrameOnly`](Reference.md#injectedjavascriptbeforecontentloadedformainframeonly)
 - [`mediaPlaybackRequiresUserAction`](Reference.md#mediaplaybackrequiresuseraction)
 - [`nativeConfig`](Reference.md#nativeconfig)
 - [`onError`](Reference.md#onerror)
@@ -29,6 +32,7 @@ This document lays out the current public properties and methods for the React N
 - [`decelerationRate`](Reference.md#decelerationrate)
 - [`domStorageEnabled`](Reference.md#domstorageenabled)
 - [`javaScriptEnabled`](Reference.md#javascriptenabled)
+- [`javaScriptCanOpenWindowsAutomatically`](Reference.md#javascriptcanopenwindowsautomatically)
 - [`androidHardwareAccelerationDisabled`](Reference.md#androidHardwareAccelerationDisabled)
 - [`mixedContentMode`](Reference.md#mixedcontentmode)
 - [`thirdPartyCookiesEnabled`](Reference.md#thirdpartycookiesenabled)
@@ -61,6 +65,8 @@ This document lays out the current public properties and methods for the React N
 - [`allowsLinkPreview`](Reference.md#allowsLinkPreview)
 - [`sharedCookiesEnabled`](Reference.md#sharedCookiesEnabled)
 - [`textZoom`](Reference.md#textZoom)
+- [`ignoreSilentHardwareSwitch`](Reference.md#ignoreSilentHardwareSwitch)
+- [`onFileDownload`](Reference.md#onFileDownload)
 
 ## Methods Index
 
@@ -70,6 +76,11 @@ This document lays out the current public properties and methods for the React N
 - [`reload`](Reference.md#reload)
 - [`stopLoading`](Reference.md#stoploading)
 - [`injectJavaScript`](Reference.md#injectjavascriptstr)
+- [`clearFormData`](Reference.md#clearFormData)
+- [`clearCache`](Reference.md#clearCache)
+- [`clearHistory`](Reference.md#clearHistory)
+- [`requestFocus`](Reference.md#requestFocus)
+- [`postMessage`](Reference.md#postMessage)
 
 ---
 
@@ -85,9 +96,9 @@ The object passed to `source` can have either of the following shapes:
 
 **Load uri**
 
-- `uri` (string) - The URI to load in the `WebView`. Can be a local or remote file.
+- `uri` (string) - The URI to load in the `WebView`. Can be a local or remote file, and can be changed with React state or props to navigate to a new page.
 - `method` (string) - The HTTP Method to use. Defaults to GET if not specified. On Android, the only supported methods are GET and POST.
-- `headers` (object) - Additional HTTP headers to send with the request. On Android, this can only be used with GET requests.
+- `headers` (object) - Additional HTTP headers to send with the request. On Android, this can only be used with GET requests. See the [Guide](Guide.md#setting-custom-headers) for more information on setting custom headers.
 - `body` (string) - The HTTP body to send with the request. This must be a valid UTF-8 string, and will be sent exactly as specified, with no additional encoding (e.g. URL-escaping or base64) applied. On Android, this can only be used with POST requests.
 
 **Static HTML**
@@ -115,11 +126,15 @@ Controls whether to adjust the content inset for web views that are placed behin
 
 ### `injectedJavaScript`
 
-Set this to provide JavaScript that will be injected into the web page when the view loads. Make sure the string evaluates to a valid type (`true` works) and doesn't otherwise throw an exception.
+Set this to provide JavaScript that will be injected into the web page after the document finishes loading, but before other subresources finish loading.
 
-| Type   | Required |
-| ------ | -------- |
-| string | No       |
+Make sure the string evaluates to a valid type (`true` works) and doesn't otherwise throw an exception.
+
+On iOS, see [`WKUserScriptInjectionTimeAtDocumentEnd`](https://developer.apple.com/documentation/webkit/wkuserscriptinjectiontime/wkuserscriptinjectiontimeatdocumentend?language=objc)
+
+| Type   | Required | Platform |
+| ------ | -------- | -------- |
+| string | No       | iOS, Android, macOS
 
 To learn more, read the [Communicating between JS and Native](Guide.md#communicating-between-js-and-native) guide.
 
@@ -133,11 +148,67 @@ const INJECTED_JAVASCRIPT = `(function() {
 })();`;
 
 <WebView
-  source={{ uri: 'https://facebook.github.io/react-native' }}
+  source={{ uri: 'https://reactnative.dev' }}
   injectedJavaScript={INJECTED_JAVASCRIPT}
   onMessage={this.onMessage}
 />;
 ```
+
+---
+
+### `injectedJavaScriptBeforeContentLoaded`
+
+Set this to provide JavaScript that will be injected into the web page after the document element is created, but before other subresources finish loading.
+
+Make sure the string evaluates to a valid type (`true` works) and doesn't otherwise throw an exception.
+
+On iOS, see [`WKUserScriptInjectionTimeAtDocumentStart`](https://developer.apple.com/documentation/webkit/wkuserscriptinjectiontime/wkuserscriptinjectiontimeatdocumentstart?language=objc)
+
+| Type   | Required | Platform |
+| ------ | -------- | -------- |
+| string | No       | iOS, macOS |
+
+To learn more, read the [Communicating between JS and Native](Guide.md#communicating-between-js-and-native) guide.
+
+Example:
+
+Post message a JSON object of `window.location` to be handled by [`onMessage`](Reference.md#onmessage). `window.ReactNativeWebView.postMessage` *will* be available at this time.
+
+```jsx
+const INJECTED_JAVASCRIPT = `(function() {
+    window.ReactNativeWebView.postMessage(JSON.stringify(window.location));
+})();`;
+
+<WebView
+  source={{ uri: 'https://reactnative.dev' }}
+  injectedJavaScriptBeforeContentLoaded={INJECTED_JAVASCRIPT}
+  onMessage={this.onMessage}
+/>;
+```
+
+---
+
+### `injectedJavaScriptForMainFrameOnly`
+
+If `true` (default; mandatory for Android), loads the `injectedJavaScript` only into the main frame.
+
+If `false`, (only supported on iOS and macOS), loads it into all frames (e.g. iframes).
+
+| Type   | Required | Platform |
+| ------ | -------- | -------- |
+| bool | No       | iOS and macOS (only `true` supported for Android) |
+
+---
+
+### `injectedJavaScriptBeforeContentLoadedForMainFrameOnly`
+
+If `true` (default; mandatory for Android), loads the `injectedJavaScriptBeforeContentLoaded` only into the main frame.
+
+If `false`, (only supported on iOS and macOS), loads it into all frames (e.g. iframes).
+
+| Type   | Required | Platform |
+| ------ | -------- | -------- |
+| bool | No       | iOS and macOS (only `true` supported for Android) |
 
 ---
 
@@ -147,9 +218,9 @@ Boolean that determines whether HTML5 audio and video requires the user to tap t
 
 NOTE: the default `true` value might cause some videos to hang loading on iOS. Setting it to `false` could fix this issue.
 
-| Type | Required |
-| ---- | -------- |
-| bool | No       |
+| Type | Required | Platform |
+| ---- | -------- | -------- |
+| bool | No       | iOS, Android, macOS |
 
 ---
 
@@ -163,9 +234,9 @@ The `nativeConfig` prop expects an object with the following keys:
 - `props` (object)
 - `viewManager` (object)
 
-| Type   | Required |
-| ------ | -------- |
-| object | No       |
+| Type   | Required | Platform |
+| ------ | -------- | -------- |
+| object | No       | iOS, Android, macOS |
 
 ---
 
@@ -181,7 +252,7 @@ Example:
 
 ```jsx
 <WebView
-  source={{ uri: 'https://facebook.github.io/react-native' }}
+  source={{ uri: 'https://reactnative.dev' }}
   onError={syntheticEvent => {
     const { nativeEvent } = syntheticEvent;
     console.warn('WebView error: ', nativeEvent);
@@ -221,7 +292,7 @@ Example:
 
 ```jsx
 <WebView
-  source={{ uri: 'https://facebook.github.io/react-native' }}
+  source={{ uri: 'https://reactnative.dev' }}
   onLoad={syntheticEvent => {
     const { nativeEvent } = syntheticEvent;
     this.url = nativeEvent.url;
@@ -254,7 +325,7 @@ Example:
 
 ```jsx
 <WebView
-  source={{ uri: 'https://facebook.github.io/react-native' }}
+  source={{ uri: 'https://reactnative.dev' }}
   onLoadEnd={syntheticEvent => {
     // update component to be aware of loading status
     const { nativeEvent } = syntheticEvent;
@@ -288,7 +359,7 @@ Example:
 
 ```jsx
 <WebView
-  source={{ uri: 'https://facebook.github.io/react-native/=' }}
+  source={{ uri: 'https://reactnative.dev/=' }}
   onLoadStart={syntheticEvent => {
     // update component to be aware of loading status
     const { nativeEvent } = syntheticEvent;
@@ -314,15 +385,15 @@ url
 
 Function that is invoked when the `WebView` is loading.
 
-| Type     | Required |
-| -------- | -------- |
-| function | No       |
+| Type     | Required | Platform |
+| -------- | -------- | --------- |
+| function | No       | iOS, Android, macOS |
 
 Example:
 
 ```jsx
 <WebView
-  source={{ uri: 'https://facebook.github.io/react-native' }}
+  source={{ uri: 'https://reactnative.dev' }}
   onLoadProgress={({ nativeEvent }) => {
     this.loadingProgress = nativeEvent.progress;
   }}
@@ -358,7 +429,7 @@ Example:
 
 ```jsx
 <WebView
-  source={{ uri: 'https://facebook.github.io/react-native' }}
+  source={{ uri: 'https://reactnative.dev' }}
   onHttpError={syntheticEvent => {
     const { nativeEvent } = syntheticEvent;
     console.warn(
@@ -413,7 +484,7 @@ Example:
 
 ```jsx
 <WebView
-  source={{ uri: 'https://facebook.github.io/react-native' }}
+  source={{ uri: 'https://reactnative.dev' }}
   onNavigationStateChange={navState => {
     // Keep track of going back navigation within component
     this.canGoBack = navState.canGoBack;
@@ -441,15 +512,15 @@ Note that this method will not be invoked on hash URL changes (e.g. from `https:
 
 Function that is invoked when the `WebView` content process is terminated.
 
-| Type     | Required | Platform      |
-| -------- | -------- | ------------- |
-| function | No       | iOS WKWebView |
+| Type     | Required | Platform                |
+| -------- | -------- | ----------------------- |
+| function | No       | iOS and macOS WKWebView |
 
 Example:
 
 ```jsx
 <WebView
-  source={{ uri: 'https://facebook.github.io/react-native' }}
+  source={{ uri: 'https://reactnative.dev' }}
   onContentProcessDidTerminate={syntheticEvent => {
     const { nativeEvent } = syntheticEvent;
     console.warn('Content process terminated, reloading', nativeEvent);
@@ -475,16 +546,16 @@ url
 
 List of origin strings to allow being navigated to. The strings allow wildcards and get matched against _just_ the origin (not the full URL). If the user taps to navigate to a new page but the new page is not in this whitelist, the URL will be handled by the OS. The default whitelisted origins are "http://*" and "https://*".
 
-| Type             | Required |
-| ---------------- | -------- |
-| array of strings | No       |
+| Type             | Required | Platform |
+| ---------------- | -------- | -------- |
+| array of strings | No       | iOS, Android, macOS |
 
 Example:
 
 ```jsx
 //only allow URIs that begin with https:// or git://
 <WebView
-  source={{ uri: 'https://facebook.github.io/react-native' }}
+  source={{ uri: 'https://reactnative.dev' }}
   originWhitelist={['https://*', 'git://*']}
 />
 ```
@@ -495,15 +566,15 @@ Example:
 
 Function that returns a view to show if there's an error.
 
-| Type     | Required |
-| -------- | -------- |
-| function | No       |
+| Type     | Required | Platform |
+| -------- | -------- | -------- |
+| function | No       | iOS, Android, macOS |
 
 Example:
 
 ```jsx
 <WebView
-  source={{ uri: 'https://facebook.github.io/react-native' }}
+  source={{ uri: 'https://reactnative.dev' }}
   renderError={errorName => <Error name={errorName} />}
 />
 ```
@@ -516,15 +587,15 @@ The function passed to `renderError` will be called with the name of the error
 
 Function that returns a loading indicator. The startInLoadingState prop must be set to true in order to use this prop.
 
-| Type     | Required |
-| -------- | -------- |
-| function | No       |
+| Type     | Required | Platform |
+| -------- | -------- | -------- |
+| function | No       | iOS, Android, macOS |
 
 Example:
 
 ```jsx
 <WebView
-  source={{ uri: 'https://facebook.github.io/react-native' }}
+  source={{ uri: 'https://reactnative.dev' }}
   startInLoadingState={true}
   renderLoading={() => <Loading />}
 />
@@ -548,18 +619,18 @@ Function that allows custom handling of any web view requests. Return `true` fro
 
 On Android, is not called on the first load.
 
-| Type     | Required |
-| -------- | -------- |
-| function | No       |
+| Type     | Required | Platform |
+| -------- | -------- | -------- |
+| function | No       | iOS, Android, macOS |
 
 Example:
 
 ```jsx
 <WebView
-  source={{ uri: 'https://facebook.github.io/react-native' }}
+  source={{ uri: 'https://reactnative.dev' }}
   onShouldStartLoadWithRequest={request => {
     // Only allow navigating within this website
-    return request.url.startsWith('https://facebook.github.io/react-native');
+    return request.url.startsWith('https://reactnative.dev');
   }}
 />
 ```
@@ -584,9 +655,9 @@ navigationType
 
 Boolean value that forces the `WebView` to show the loading view on the first load. This prop must be set to `true` in order for the `renderLoading` prop to work.
 
-| Type | Required |
-| ---- | -------- |
-| bool | No       |
+| Type | Required | Platform |
+| ---- | -------- | -------- |
+| bool | No       | iOS, Android, macOS |
 
 ---
 
@@ -602,7 +673,7 @@ Example:
 
 ```jsx
 <WebView
-  source={{ uri: 'https://facebook.github.io/react-native' }}
+  source={{ uri: 'https://reactnative.dev' }}
   style={{ marginTop: 20 }}
 />
 ```
@@ -621,7 +692,7 @@ Example:
 
 ```jsx
 <WebView
-  source={{ uri: 'https://facebook.github.io/react-native' }}
+  source={{ uri: 'https://reactnative.dev' }}
   containerStyle={{ marginTop: 20 }}
 />
 ```
@@ -653,11 +724,21 @@ Boolean value to control whether DOM Storage is enabled. Used only in Android.
 
 ### `javaScriptEnabled`
 
-Boolean value to enable JavaScript in the `WebView`. Used on Android only as JavaScript is enabled by default on iOS. The default value is `true`.
+Boolean value to enable JavaScript in the `WebView`. The default value is `true`.
 
-| Type | Required | Platform |
-| ---- | -------- | -------- |
-| bool | No       | Android  |
+| Type | Required |
+| ---- | -------- |
+| bool | No       |
+
+---
+
+### `javaScriptCanOpenWindowsAutomatically`
+
+A Boolean value indicating whether JavaScript can open windows without user interaction. The default value is `false`.
+
+| Type | Required |
+| ---- | -------- |
+| bool | No       |
 
 ---
 
@@ -689,7 +770,7 @@ Possible values for `mixedContentMode` are:
 
 ### `thirdPartyCookiesEnabled`
 
-Boolean value to enable third party cookies in the `WebView`. Used on Android Lollipop and above only as third party cookies are enabled by default on Android Kitkat and below and on iOS. The default value is `true`.
+Boolean value to enable third party cookies in the `WebView`. Used on Android Lollipop and above only as third party cookies are enabled by default on Android Kitkat and below and on iOS. The default value is `true`. For more on cookies, read the [Guide](Guide.md#Managing-Cookies)
 
 | Type | Required | Platform |
 | ---- | -------- | -------- |
@@ -701,9 +782,9 @@ Boolean value to enable third party cookies in the `WebView`. Used on Android Lo
 
 Sets the user-agent for the `WebView`.
 
-| Type   | Required |
-| ------ | -------- |
-| string | No       |
+| Type   | Required | Platform |
+| ------ | -------- | -------- |
+| string | No       | iOS, Android, macOS |
 
 ---
 
@@ -711,13 +792,13 @@ Sets the user-agent for the `WebView`.
 
 Append to the existing user-agent. Setting `userAgent` will override this.
 
-| Type   | Required |
-| ------ | -------- |
-| string | No       |
+| Type   | Required | Platform |
+| ------ | -------- | -------- |
+| string | No       | iOS, Android, macOS |
 
 ```jsx
 <WebView
-  source={{ uri: 'https://facebook.github.io/react-native' }}
+  source={{ uri: 'https://reactnative.dev' }}
   applicationNameForUserAgent={'DemoApp/1.1.0'}
 />
 // Resulting User-Agent will look like:
@@ -830,9 +911,9 @@ Possible values for `dataDetectorTypes` are:
 
 Boolean value that determines whether scrolling is enabled in the `WebView`. The default value is `true`. Setting this to `false` will prevent the webview from moving the document body when the keyboard appears over an input.
 
-| Type | Required | Platform |
-| ---- | -------- | -------- |
-| bool | No       | iOS      |
+| Type | Required | Platform      |
+| ---- | -------- | ------------- |
+| bool | No       | iOS and macOS |
 
 ---
 
@@ -851,9 +932,9 @@ The default value is `true`.
 
 Boolean value that determines whether a horizontal scroll indicator is shown in the `WebView`. The default value is `true`.
 
-| Type | Required |
-| ---- | -------- |
-| bool | No       |
+| Type | Required | Platform |
+| ---- | -------- | -------- |
+| bool | No       | iOS, Android, macOS |
 
 ---
 
@@ -861,9 +942,9 @@ Boolean value that determines whether a horizontal scroll indicator is shown in 
 
 Boolean value that determines whether a vertical scroll indicator is shown in the `WebView`. The default value is `true`.
 
-| Type | Required |
-| ---- | -------- |
-| bool | No       |
+| Type | Required | Platform |
+| ---- | -------- | -------- |
+| bool | No       | iOS, Android, macOS |
 
 ---
 
@@ -879,11 +960,11 @@ Set whether Geolocation is enabled in the `WebView`. The default value is `false
 
 ### `allowFileAccessFromFileURLs`
 
- Boolean that sets whether JavaScript running in the context of a file scheme URL should be allowed to access content from other file scheme URLs. The default value is `false`.
+Boolean that sets whether JavaScript running in the context of a file scheme URL should be allowed to access content from other file scheme URLs. The default value is `false`.
 
 | Type | Required | Platform |
 | ---- | -------- | -------- |
-| bool | No       | Android  |
+| bool | No       | iOS, Android, macOS |
 
 ---
 
@@ -901,9 +982,9 @@ Boolean that sets whether JavaScript running in the context of a file scheme URL
 
 A String value that indicates which URLs the WebView's file can then reference in scripts, AJAX requests, and CSS imports. This is only used in for WebViews that are loaded with a source.uri set to a `'file://'` URL. If not provided, the default is to only allow read access to the URL provided in source.uri itself.
 
-| Type   | Required | Platform |
-| ------ | -------- | -------- |
-| string | No       | iOS      |
+| Type   | Required | Platform      |
+| ------ | -------- | ------------- |
+| string | No       | iOS and macOS |
 
 ---
 
@@ -951,9 +1032,9 @@ If true, this will hide the keyboard accessory view (< > and Done).
 
 If true, this will be able horizontal swipe gestures. The default value is `false`.
 
-| Type    | Required | Platform |
-| ------- | -------- | -------- |
-| boolean | No       | iOS      |
+| Type    | Required | Platform      |
+| ------- | -------- | ------------- |
+| boolean | No       | iOS and macOS |
 
 ---
 
@@ -961,9 +1042,9 @@ If true, this will be able horizontal swipe gestures. The default value is `fals
 
 Does not store any data within the lifetime of the WebView.
 
-| Type    | Required |
-| ------- | -------- |
-| boolean | No       |
+| Type    | Required | Platform |
+| ------- | -------- | -------- |
+| boolean | No       | iOS, Android, macOS |
 
 ---
 
@@ -991,9 +1072,9 @@ Sets whether the WebView should disable saving form data. The default value is `
 
 Sets whether WebView should use browser caching.
 
-| Type    | Required | Default |
-| ------- | -------- | ------- |
-| boolean | No       | true    |
+| Type    | Required | Default | Platform |
+| ------- | -------- | ------- | -------- |
+| boolean | No       | true    | iOS, Android, macOS |
 
 ---
 
@@ -1002,14 +1083,15 @@ Sets whether WebView should use browser caching.
 Overrides the way the cache is used. The way the cache is used is based on the navigation type. For a normal page load, the cache is checked and content is re-validated as needed. When navigating back, content is not revalidated, instead the content is just retrieved from the cache. This property allows the client to override this behavior.
 
 Possible values are:
+
 - `LOAD_DEFAULT` - Default cache usage mode. If the navigation type doesn't impose any specific behavior, use cached resources when they are available and not expired, otherwise load resources from the network.
 - `LOAD_CACHE_ELSE_NETWORK` - Use cached resources when they are available, even if they have expired. Otherwise load resources from the network.
 - `LOAD_NO_CACHE` - Don't use the cache, load from the network.
-- `LOAD_CACHE_ONLY` - Don't use the network, load from the cache. 
- 
-| Type    | Required | Default      | Platform |
-| ------- | -------- | -------------| -------- |
-| string  | No       | LOAD_DEFAULT | Android  |
+- `LOAD_CACHE_ONLY` - Don't use the network, load from the cache.
+
+| Type   | Required | Default      | Platform |
+| ------ | -------- | ------------ | -------- |
+| string | No       | LOAD_DEFAULT | Android  |
 
 ---
 
@@ -1027,19 +1109,19 @@ If the value of this property is true, the scroll view stops on multiples of the
 
 A Boolean value that determines whether pressing on a link displays a preview of the destination for the link. In iOS this property is available on devices that support 3D Touch. In iOS 10 and later, the default value is true; before that, the default value is false.
 
-| Type    | Required | Platform |
-| ------- | -------- | -------- |
-| boolean | No       | iOS      |
+| Type    | Required | Platform      |
+| ------- | -------- | ------------- |
+| boolean | No       | iOS and macOS |
 
 ---
 
 ### `sharedCookiesEnabled`
 
-Set `true` if shared cookies from `[NSHTTPCookieStorage sharedHTTPCookieStorage]` should used for every load request in the WebView. The default value is `false`.
+Set `true` if shared cookies from `[NSHTTPCookieStorage sharedHTTPCookieStorage]` should used for every load request in the WebView. The default value is `false`. For more on cookies, read the [Guide](Guide.md#Managing-Cookies)
 
-| Type    | Required | Platform |
-| ------- | -------- | -------- |
-| boolean | No       | iOS      |
+| Type    | Required | Platform      |
+| ------- | -------- | ------------- |
+| boolean | No       | iOS and macOS |
 
 ---
 
@@ -1056,6 +1138,48 @@ When setting the standard textZoom (100) parameter size, this undesirable effect
 Example:
 
 `<WebView textZoom={100} />`
+
+### `ignoreSilentHardwareSwitch`
+
+(ios only)
+
+When set to true the hardware silent switch is ignored. Default: `false`
+
+| Type    | Required | Platform |
+| ------- | -------- | -------- |
+| boolean | No       | iOS      |
+
+### `onFileDownload`
+This property is iOS-only.
+
+Function that is invoked when the client needs to download a file.
+
+iOS 13+ only: If the webview navigates to a URL that results in an HTTP
+response with a Content-Disposition header 'attachment...', then
+this will be called.
+
+iOS 8+: If the MIME type indicates that the content is not renderable by the
+webview, that will also cause this to be called. On iOS versions before 13,
+this is the only condition that will cause this function to be called.
+
+The application will need to provide its own code to actually download
+the file.
+
+If not provided, the default is to let the webview try to render the file.
+
+Example:
+```jsx
+<WebView
+  source={{ uri: 'https://reactnative.dev' }}
+  onFileDownload={ ( { nativeEvent: { downloadUrl } } ) => {
+    // You use downloadUrl which is a string to download files however you want.
+  }}
+  />
+```
+
+| Type    | Required | Platform |
+| ------- | -------- | -------- |
+| function | No       | iOS      |
 
 ## Methods
 
@@ -1106,6 +1230,51 @@ injectJavaScript('... javascript string ...');
 Executes the JavaScript string.
 
 To learn more, read the [Communicating between JS and Native](Guide.md#communicating-between-js-and-native) guide.
+
+### `requestFocus()`
+
+```javascript
+requestFocus();
+```
+
+Request the webView to ask for focus. (People working on TV apps might want having a look at this!)
+
+### `postMessage(str)`
+
+```javascript
+postMessage('message');
+```
+Post a message to WebView, handled by [`onMessage`](Reference.md#onmessage).
+
+### `clearFormData()`
+
+(android only)
+
+```javascript
+clearFormData();
+```
+
+Removes the autocomplete popup from the currently focused form field, if present. [developer.android.com reference](<https://developer.android.com/reference/android/webkit/WebView.html#clearFormData()>)
+
+### `clearCache(bool)`
+
+(android only)
+
+```javascript
+clearCache(true);
+```
+
+Clears the resource cache. Note that the cache is per-application, so this will clear the cache for all WebViews used. [developer.android.com reference](<https://developer.android.com/reference/android/webkit/WebView.html#clearCache(boolean)>)
+
+### `clearHistory()`
+
+(android only)
+
+```javascript
+clearHistory();
+```
+
+Tells this WebView to clear its internal back/forward list. [developer.android.com reference](<https://developer.android.com/reference/android/webkit/WebView.html#clearHistory()>)
 
 ## Other Docs
 

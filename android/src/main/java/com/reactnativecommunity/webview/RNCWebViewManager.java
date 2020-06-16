@@ -797,20 +797,19 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     @Override
     public boolean shouldOverrideUrlLoading(WebView view, String url) {
-      if (whitelist == null || whitelist.size() == 0) { activeUrl = url; return false; }
+      if (whitelist == null || whitelist.size() == 0) { return false; }
       for (Object v: whitelist.toArrayList()) {
         if (Minimatch.minimatch(url, v.toString())) {
-          activeUrl = url;
           return false;
         }
       }
-      progressChangedFilter.setWaitingForCommandLoadUrl(true);
       dispatchEvent(
         view,
         new TopCanceledRequestEvent(
           view.getId(),
           createWebViewEvent(view, url)));
       /*
+      progressChangedFilter.setWaitingForCommandLoadUrl(true);
       dispatchEvent(
         view,
         new TopShouldStartLoadWithRequestEvent(

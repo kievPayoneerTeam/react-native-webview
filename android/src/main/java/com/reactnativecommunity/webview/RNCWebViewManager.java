@@ -438,7 +438,6 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     // Disable caching
     view.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
-    view.getSettings().setAppCacheEnabled(!enabled);
     view.clearHistory();
     view.clearCache(enabled);
 
